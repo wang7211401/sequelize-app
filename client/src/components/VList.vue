@@ -3,10 +3,13 @@
         <div class="mb">
             <div class="list" v-for="content of contents" :key="content.id">
                 <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">{{content.title}}</h5>
+                    <h5 class="mb-1">{{content.username}}</h5>
                     <small>{{content.created_at}}</small>
                 </div>
-                <p class="mb-1">
+                <p class="mb-1 ml">
+                    {{content.title}}
+                </p>
+                <p class="mb-1 ml">
                     {{content.content}}
                 </p>
                 <footer class="text-right">
@@ -14,6 +17,16 @@
                     <small>回复（{{content.comment_count}}）</small>
                     <a href="" @click.prevent="replyToggle(content.id)">我要回复</a>
                 </footer>
+                
+                <div class="list" v-for="item in content.comments" :key="item.id">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{item.username}}</h5>
+                        <small>{{item.created_at}}</small>
+                    </div>
+                    <p class="mb-1 ml">
+                        {{item.content}}
+                    </p>
+                </div>
             </div>
         </div>
 

@@ -40,12 +40,16 @@
             <div v-if="userInfo.username">
                 <a href="javascript:;">{{userInfo.username}}</a>
                 <span> | </span>
+                <a href="" @click.prevent="toggle('publish')">我要发表</a>
+                <span> | </span>
                 <a href="" @click.prevent="logout">退出</a>
             </div>
             <div v-else> 
                 <a href="" @click.prevent="toggle('register')">注册</a>
                 <span> | </span>
                 <a href="" @click.prevent="toggle('login')">登录</a>
+                <span> | </span>
+                <a href="" @click.prevent="toggle('publish')">我要发表</a>
             </div>
         </div>
 
@@ -103,7 +107,21 @@
             </template>
         </modal>
 
+         <modal title="发表" :show="modalName == 'publish'" @close="toggle">
+            <form>
+                <div class="form-group row">
+                    <div class="col-md-12">
+                        <input class="form-control mb" type="text" v-model="publish.title" placeholder="请输入标题">
+                        <textarea class="form-control" id="publish_username" placeholder="发表内容……" cols="30" rows="10" v-model="publish.content"></textarea>
+                    </div>
+                </div>
+            </form>
 
+            <template slot="footer">
+                <button type="button" class="btn btn-primary" @click="publishSubmit">发表</button>
+                <button type="button" class="btn btn-secondary" @click="toggle">取消</button>
+            </template>
+        </modal>
     </div>
 </template>
 
@@ -126,6 +144,10 @@ export default {
             log:{
                 username:'',
                 password:''
+            },
+            publish:{
+                title:'',
+                content:''
             }
         }
     },
@@ -201,7 +223,21 @@ export default {
                     location.href="/index.html"
                 }
             })
+        },
+        publishSubmit(){
+            axios({
+                method:'post',
+                url:'/api/publish',
+                data:this.publish
+            }).then(res=>{
+                if(res.data.code == 0){
+                    alert(res.data.msg);
+                    location.href="/index.html"
+                }else{
+                    alert(res.data.msg);
+                }
+            })
         }
-    },
+    }
 }
 </script>

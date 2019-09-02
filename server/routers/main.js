@@ -1,8 +1,27 @@
 const KoaRouter = require('koa-router');
 const Sequelize = require('sequelize');
 const md5 = require('md5');
+const moment = require('moment');
+const fs = require('fs');
+const path = require('path');
 const Models = require('../models');
 const router = new KoaRouter();
+
+router.get('/', async ctx => {
+    // ctx.redirect('index.html')
+    // ctx.status = 301;
+    ctx.set("Content-Type", "text/html;charset='utf-8'");
+    ctx.response.body = fs.createReadStream(path.join(__dirname, '../public/index.html'));
+    // await fs.readFile(path.join(__dirname, '../public/index.html'), "utf-8", function(err, data) {
+    //     if (err) {
+    //         console.log("index.html loading is failed :" + err);
+    //     } else {
+    //         //返回index.html页面
+    //         console.log(data)
+    //         ctx.response.body = data
+    //     }
+    // });
+})
 
 router.get('/api/', async ctx => {
 
@@ -14,25 +33,45 @@ router.get('/api/', async ctx => {
     let rs = await Models.Contents.findAndCountAll({
         limit: prepage,
         offset,
-        include: {
-            model: Models.Users
-        }
+        include: [{
+            model: Models.Users,
+        }, {
+            model: Models.Comments,
+            include: {
+                model: Models.Users
+            }
+        }],
+        distinct: true
     });
+
 
     ctx.body = {
         code: 0,
         count: rs.count,
         prepage,
         data: rs.rows.map(d => {
+            let comments = d.Comments.map(item => {
+                if (item.id !== "") {
+                    return {
+                        id: item.id,
+                        user_id: item.user_id,
+                        content_id: item.content_id,
+                        username: item.User.username,
+                        content: item.content,
+                        created_at: moment(item.createdAt).format('YYYY-MM-DD HH:mm'),
+                    }
+                }
+            })
             return {
                 id: d.id,
                 title: d.title,
                 content: d.content,
                 user_id: d.user_id,
                 username: d.User.username,
-                created_at: d.createdAt,
+                created_at: moment(d.createdAt).format('YYYY-MM-DD HH:mm'),
                 like_count: d.like_count,
-                comment_count: d.comment_count
+                comment_count: d.comment_count,
+                comments,
             }
         })
     }
@@ -265,6 +304,42 @@ router.post('/api/reply', async ctx => {
 
 });
 
+router.post('/api/publish', async ctx => {
+    let title = ctx.request.body.title.trim();
+    let content = ctx.request.body.content.trim();
+
+    let uid = ctx.session.uid
+
+    if (!uid) {
+        return ctx.body = {
+            code: 1,
+            msg: '请先登录后再操作！',
+            data: ''
+        }
+    }
+
+    if (title === "" || content === "") {
+        return ctx.body = {
+            code: 1,
+            msg: '用户不能为空！',
+            data: ''
+        }
+    }
+
+
+    await Models.Contents.build({
+        user_id: uid,
+        title,
+        content
+    }).save()
+
+    ctx.body = {
+        code: 0,
+        msg: '发表成功',
+        data: ''
+    }
+
+})
 router.post('/api/logout', async ctx => {
     ctx.session = null;
     ctx.body = {
